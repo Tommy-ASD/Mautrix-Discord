@@ -210,8 +210,10 @@ func (guild *Guild) CreateMatrixRoom(user *User, meta *discordgo.Guild) error {
 	// Apply extra power levels from config.
 	if len(guild.bridge.Config.Bridge.ExtraPowerLevels) > 0 {
 		plOverride := &event.PowerLevelsEventContent{
-			Users: make(map[id.UserID]int, len(guild.bridge.Config.Bridge.ExtraPowerLevels)),
+			Users: make(map[id.UserID]int, len(guild.bridge.Config.Bridge.ExtraPowerLevels)+1),
 		}
+		// Must include the room creator, otherwise Synapse rejects the request.
+		plOverride.Users[guild.bridge.Bot.UserID] = 100
 		for userID, level := range guild.bridge.Config.Bridge.ExtraPowerLevels {
 			plOverride.Users[userID] = level
 		}
