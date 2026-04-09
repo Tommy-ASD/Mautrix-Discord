@@ -199,14 +199,25 @@ func (guild *Guild) CreateMatrixRoom(user *User, meta *discordgo.Guild) error {
 		creationContent["m.federate"] = false
 	}
 
-	resp, err := guild.bridge.Bot.CreateRoom(&mautrix.ReqCreateRoom{
+	guildReq := &mautrix.ReqCreateRoom{
 		Visibility:      "private",
 		Name:            guild.Name,
 		Preset:          "private_chat",
 		InitialState:    initialState,
 		CreationContent: creationContent,
 		RoomVersion:     "11",
-	})
+	}
+	// Apply extra power levels from config.
+	if len(guild.bridge.Config.Bridge.ExtraPowerLevels) > 0 {
+		plOverride := &event.PowerLevelsEventContent{
+			Users: make(map[id.UserID]int, len(guild.bridge.Config.Bridge.ExtraPowerLevels)),
+		}
+		for userID, level := range guild.bridge.Config.Bridge.ExtraPowerLevels {
+			plOverride.Users[userID] = level
+		}
+		guildReq.PowerLevelOverride = plOverride
+	}
+	resp, err := guild.bridge.Bot.CreateRoom(guildReq)
 	if err != nil {
 		guild.log.Warnln("Failed to create room:", err)
 		return err

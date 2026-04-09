@@ -25,6 +25,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"maunium.net/go/mautrix/bridge/bridgeconfig"
+	"maunium.net/go/mautrix/id"
 )
 
 type BridgeConfig struct {
@@ -94,6 +95,11 @@ type BridgeConfig struct {
 	} `yaml:"provisioning"`
 
 	Permissions bridgeconfig.PermissionConfig `yaml:"permissions"`
+
+	// Extra users to include in the initial power level override when creating
+	// portal rooms and guild spaces. Keyed by Matrix user ID, value is the
+	// power level (0-100).
+	ExtraPowerLevels map[id.UserID]int `yaml:"extra_power_levels"`
 
 	usernameTemplate    *template.Template `yaml:"-"`
 	displaynameTemplate *template.Template `yaml:"-"`

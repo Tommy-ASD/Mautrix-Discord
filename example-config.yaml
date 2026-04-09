@@ -159,6 +159,11 @@ bridge:
     # Whether or not created rooms should have federation enabled.
     # If false, created portal rooms will never be federated.
     federate_rooms: true
+    # Extra users to give elevated power levels in all portal rooms and guild
+    # spaces. Useful for giving a user priviliges beyond 50.
+    # Keys are Matrix user IDs, values are power levels (0-100).
+    extra_power_levels: {}
+    #    "@user:example.org": 100
     # Prefix messages from webhooks with the profile info? This can be used along with a custom displayname_template
     # to better handle webhooks that change their name all the time (like ones used by bridges).
     #
