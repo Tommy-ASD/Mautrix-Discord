@@ -448,8 +448,14 @@ func (portal *Portal) CreateMatrixRoom(user *User, channel *discordgo.Channel) e
 	}
 
 	creationContent := make(map[string]interface{})
+	isVoiceChannel := portal.Type == discordgo.ChannelTypeGuildVoice || portal.Type == discordgo.ChannelTypeGuildStageVoice
 	if portal.Type == discordgo.ChannelTypeGuildCategory {
 		creationContent["type"] = event.RoomTypeSpace
+	} else if isVoiceChannel {
+		// Mark the room as a MatrixRTC call room so clients (Element Call, Cinny,
+		// Commet, Hearth) recognise it as a voice channel. This goes in
+		// m.room.create and is immutable after creation.
+		creationContent["type"] = "org.matrix.msc3417.call"
 	}
 	if !portal.bridge.Config.Bridge.FederateRooms {
 		creationContent["m.federate"] = false
@@ -491,8 +497,9 @@ func (portal *Portal) CreateMatrixRoom(user *User, channel *discordgo.Channel) e
 		CreationContent: creationContent,
 		RoomVersion:     "11",
 	}
-	// Apply extra power levels from config.
-	if len(portal.bridge.Config.Bridge.ExtraPowerLevels) > 0 {
+	// Apply extra power levels from config, and for voice channels the MatrixRTC
+	// call-member override that makes the room a usable call room.
+	if len(portal.bridge.Config.Bridge.ExtraPowerLevels) > 0 || isVoiceChannel {
 		plOverride := &event.PowerLevelsEventContent{
 			Users: make(map[id.UserID]int, len(portal.bridge.Config.Bridge.ExtraPowerLevels)+2),
 		}
@@ -502,6 +509,23 @@ func (portal *Portal) CreateMatrixRoom(user *User, channel *discordgo.Channel) e
 		plOverride.Users[portal.bridge.Bot.UserID] = 100
 		for userID, level := range portal.bridge.Config.Bridge.ExtraPowerLevels {
 			plOverride.Users[userID] = level
+		}
+		if isVoiceChannel {
+			// MatrixRTC clients and bridge puppets join at PL 0 and must be able to
+			// publish their own org.matrix.msc3401.call.member state. The default
+			// state_default is 50, so drop that event type to 0 — matching what every
+			// MatrixRTC client does when it creates a voice room. Set the map directly:
+			// SetEventLevel elides values equal to the (mis-detected) default for an
+			// unknown-class event type.
+			//
+			// Only call.member is dropped: its state_key is the sender's MXID, so the
+			// homeserver's state-key-ownership rule confines each member to their own
+			// membership. org.matrix.msc3401.call (opaque call-id state_key, not user-
+			// owned) is left at state_default so a PL-0 member can't clobber arbitrary
+			// call objects.
+			plOverride.Events = map[string]int{
+				"org.matrix.msc3401.call.member": 0,
+			}
 		}
 		req.PowerLevelOverride = plOverride
 	}

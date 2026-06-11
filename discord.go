@@ -8,8 +8,10 @@ import (
 
 func (user *User) channelIsBridgeable(channel *discordgo.Channel) bool {
 	switch channel.Type {
-	case discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews:
-		// allowed
+	case discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews,
+		discordgo.ChannelTypeGuildVoice, discordgo.ChannelTypeGuildStageVoice:
+		// allowed — voice/stage channels are bridged as MatrixRTC call rooms;
+		// their text-in-voice chat bridges like any other channel
 	case discordgo.ChannelTypeDM, discordgo.ChannelTypeGroupDM:
 		// DMs are always bridgeable, no need for permission checks
 		return true

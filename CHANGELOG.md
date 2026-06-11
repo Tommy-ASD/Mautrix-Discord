@@ -1,3 +1,11 @@
+# Unreleased
+
+* Added bridging of guild voice and stage channels. Their rooms are created as
+  MatrixRTC call rooms (`creation_content.type` = `org.matrix.msc3417.call`) so
+  clients recognise them as voice channels, and the room's power levels drop
+  `org.matrix.msc3401.call.member` to 0 so participants can publish their own
+  call membership. Text-in-voice chat bridges like any other channel.
+
 # v0.7.6 (2026-02-16)
 
 * Bumped minimum Go version to 1.25.
